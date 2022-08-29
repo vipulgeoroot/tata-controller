@@ -10,4 +10,5 @@ import lombok.*;
 public class GetDetailsReq {
 
     private String agent;
+    private String speaker;
 }

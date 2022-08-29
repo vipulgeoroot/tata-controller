@@ -10,6 +10,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString
 public class CreateChannelRequest {
 //    private String callSid;
 //    private String channelId;

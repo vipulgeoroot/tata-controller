@@ -254,10 +254,9 @@ public class CallServiceImpl implements CallService {
                 .agent(callRequest.getAgentId())
                 .audiosocket_ip(socketConfig.audiosocketHost)
                 .qing_base_url(socketConfig.cueingBaseUrl)
-                .qing_end_point(socketConfig.cueingEndPoint)
                 .user_id(userId)
                 .callSid("SAMPARK-"+callRequest.getUniqueId())
-                .legType("Customer")
+                .speaker("customer")
                 .build();
 
         flaskService.intializeAudioSocket(newCallReq);
@@ -265,7 +264,7 @@ public class CallServiceImpl implements CallService {
         TimeUnit.MILLISECONDS.sleep(500);
 
         log.info("Initiated audio-socket");
-        FlaskResponse flaskResponse = flaskService.getDetails(callRequest);
+        FlaskResponse flaskResponse = flaskService.getDetails(callRequest, "customer");
         log.info("Got details regarding audio-socket " + flaskResponse.toString());
 
         String audioSocketUrl = flaskResponse.getAudiosocket_ip() + ":" + flaskResponse.getAudiosocket_port();
@@ -315,22 +314,21 @@ public class CallServiceImpl implements CallService {
         asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridge.getId()).channelId(snoopChannel.getId()).build());
         asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridge.getId()).channelId(externalMediaChannel.getId()).build());
 
-        newCallReq = NewCallReq.builder()
+        NewCallReq agentCallReq = NewCallReq.builder()
                 .agent(callRequest.getAgentId())
                 .audiosocket_ip(socketConfig.audiosocketHost)
                 .qing_base_url(socketConfig.cueingBaseUrl)
-                .qing_end_point(socketConfig.cueingEndPoint)
                 .user_id(userId)
                 .callSid("SAMPARK-"+callRequest.getUniqueId())
-                .legType("Agent")
+                .speaker("agent")
                 .build();
 
-        flaskService.intializeAudioSocket(newCallReq);
+        flaskService.intializeAudioSocket(agentCallReq);
 
         TimeUnit.MILLISECONDS.sleep(500);
 
         log.info("Initiated audio-socket");
-        FlaskResponse flaskResponseAgent = flaskService.getDetails(callRequest);
+        FlaskResponse flaskResponseAgent = flaskService.getDetails(callRequest,"agent");
         log.info("Got details regarding audio-socket " + flaskResponseAgent.toString());
 
         String audioSocketUrlAgent = flaskResponse.getAudiosocket_ip() + ":" + flaskResponseAgent.getAudiosocket_port();
@@ -393,7 +391,7 @@ public class CallServiceImpl implements CallService {
         try {
             List<Map<String, Object>> data = jdbcTemplate.queryForList(query);
             if (data.isEmpty()) {
-                return 57171;
+                throw new Exception("No user mapped to user - "+userName);
             } else {
                 return (Integer) data.get(0).get("id");
             }
