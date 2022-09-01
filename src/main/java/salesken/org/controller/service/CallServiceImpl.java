@@ -261,7 +261,7 @@ public class CallServiceImpl implements CallService {
 
         flaskService.intializeAudioSocket(newCallReq);
 
-        TimeUnit.MILLISECONDS.sleep(500);
+        TimeUnit.MILLISECONDS.sleep(200);
 
         log.info("Initiated audio-socket");
         FlaskResponse flaskResponse = flaskService.getDetails(callRequest, "customer");
@@ -325,7 +325,7 @@ public class CallServiceImpl implements CallService {
 
         flaskService.intializeAudioSocket(agentCallReq);
 
-        TimeUnit.MILLISECONDS.sleep(500);
+        TimeUnit.MILLISECONDS.sleep(200);
 
         log.info("Initiated audio-socket");
         FlaskResponse flaskResponseAgent = flaskService.getDetails(callRequest,"agent");
@@ -344,7 +344,7 @@ public class CallServiceImpl implements CallService {
 
 
         AsteriskResponse snoopChannelAgent = asteriskCommandService.createSnoopChannel(CreateSnoopChannelRequest.builder()
-                .channelId(customerChannel.getId())
+                .channelId(agentChannel.getId())
                 .appName(ari.getAppName())
                 .spy("in")
                 .build());
