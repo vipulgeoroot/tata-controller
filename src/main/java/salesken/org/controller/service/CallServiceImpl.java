@@ -31,7 +31,7 @@ public class CallServiceImpl implements CallService {
 
     private Map<String,String > snoopToMediaChannelCache;
 
-
+    private Map<String,String > customerToAgentChannelCache;
 
     @Autowired
     private SocketConfig socketConfig;
@@ -58,6 +58,7 @@ public class CallServiceImpl implements CallService {
         this.channelService = channelService;
         this.esIngestionService = esIngestionService;
         this.snoopToMediaChannelCache = new HashMap<>();
+        this.customerToAgentChannelCache = new HashMap<>();
     }
 
     @Override
@@ -193,9 +194,12 @@ public class CallServiceImpl implements CallService {
     @SneakyThrows
     public void onChannelLeftBridge(ChannelLeftBridge message) {
         String externalMediaChannel = snoopToMediaChannelCache.get(message.getChannel().getId());
-        if( externalMediaChannel==null || externalMediaChannel.isEmpty() )
-            return;
-        asteriskCommandService.hangupChannel(HangupChannelRequest.builder().channelId(externalMediaChannel).build());
+        if( externalMediaChannel!=null && !externalMediaChannel.isEmpty() )
+            asteriskCommandService.hangupChannel(HangupChannelRequest.builder().channelId(externalMediaChannel).build());
+        else{
+            String agentChannel = customerToAgentChannelCache.get(message.getChannel().getId());
+            asteriskCommandService.hangupChannel(HangupChannelRequest.builder().channelId(agentChannel).build());
+        }
 //       List<String> channelList = message.getBridge().getChannels();
 //       for(String ch: channelList){
 //           ari.channels().get(ch).execute(new AriCallback<Channel>() {
@@ -261,7 +265,7 @@ public class CallServiceImpl implements CallService {
 
         flaskService.intializeAudioSocket(newCallReq);
 
-        TimeUnit.MILLISECONDS.sleep(200);
+        TimeUnit.MILLISECONDS.sleep(100);
 
         log.info("Initiated audio-socket");
         FlaskResponse flaskResponse = flaskService.getDetails(callRequest, "customer");
@@ -313,6 +317,8 @@ public class CallServiceImpl implements CallService {
 
         asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridge.getId()).channelId(snoopChannel.getId()).build());
         asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridge.getId()).channelId(externalMediaChannel.getId()).build());
+        asteriskCommandService.dialChannel(customerChannel.getId());
+        this.snoopToMediaChannelCache.put(snoopChannel.getId(), externalMediaChannel.getId());
 
         NewCallReq agentCallReq = NewCallReq.builder()
                 .agent(callRequest.getAgentId())
@@ -325,7 +331,7 @@ public class CallServiceImpl implements CallService {
 
         flaskService.intializeAudioSocket(agentCallReq);
 
-        TimeUnit.MILLISECONDS.sleep(200);
+        TimeUnit.MILLISECONDS.sleep(100);
 
         log.info("Initiated audio-socket");
         FlaskResponse flaskResponseAgent = flaskService.getDetails(callRequest,"agent");
@@ -378,9 +384,8 @@ public class CallServiceImpl implements CallService {
 
         asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridgeAgent.getId()).channelId(snoopChannelAgent.getId()).build());
         asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridgeAgent.getId()).channelId(externalMediaChannelAgent.getId()).build());
-        asteriskCommandService.dialChannel(customerChannel.getId());
         asteriskCommandService.dialChannel(agentChannel.getId());
-        this.snoopToMediaChannelCache.put(snoopChannel.getId(), externalMediaChannel.getId());
+        this.customerToAgentChannelCache.put(customerChannel.getId(),agentChannel.getId());
         this.snoopToMediaChannelCache.put(snoopChannelAgent.getId(), externalMediaChannelAgent.getId());
     }
 
