@@ -2,20 +2,15 @@ package salesken.org.controller.service;
 
 import ch.loway.oss.ari4java.ARI;
 import ch.loway.oss.ari4java.generated.models.Bridge;
-import ch.loway.oss.ari4java.generated.models.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import salesken.org.controller.configuration.AppConfiguration;
 import salesken.org.controller.models.*;
 
 import java.util.Base64;
-import java.util.HashMap;
 
 @Service
 @Slf4j
@@ -190,5 +185,24 @@ public class AsteriskCommandServiceImpl implements AsteriskCommandService {
             log.error("Error while hanging up channel - "+hangupChannelRequest.getChannelId());
         }
         return responseEntity.getBody();
+    }
+
+    @Override
+    public HttpStatus getChannel(String channelId) {
+        log.info("GET CHANNEL ::{}", channelId);
+        ResponseEntity<AsteriskResponse> responseEntity = null;
+        try {
+            String authStr = appConfiguration.asteriskUser+":"+appConfiguration.asteriskPassword;
+            String base64Creds = Base64.getEncoder().encodeToString(authStr.getBytes());
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Authorization", "Basic " + base64Creds);
+            HttpEntity request = new HttpEntity(headers);
+            String url = appConfiguration.asteriskHost + "ari/channels/"+channelId;
+            responseEntity = restTemplate.exchange(url, HttpMethod.GET, request,AsteriskResponse.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("Error while fetching channel - "+channelId);
+        }
+        return responseEntity.getStatusCode();
     }
 }

@@ -1,7 +1,7 @@
 package salesken.org.controller.service;
 
 import ch.loway.oss.ari4java.generated.models.Bridge;
-import ch.loway.oss.ari4java.generated.models.Channel;
+import org.springframework.http.HttpStatus;
 import salesken.org.controller.models.*;
 
 public interface AsteriskCommandService {
@@ -18,5 +18,7 @@ public interface AsteriskCommandService {
     AsteriskResponse createExternalChannel(CreateExternalChannelRequest createExternalChannelRequest);
 
     AsteriskResponse hangupChannel(HangupChannelRequest hangupChannelRequest);
+
+    HttpStatus getChannel(String channelId);
 
 }

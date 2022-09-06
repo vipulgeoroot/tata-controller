@@ -31,7 +31,7 @@ public class CallServiceImpl implements CallService {
 
     private Map<String,String > snoopToMediaChannelCache;
 
-    private Map<String,String > customerToAgentChannelCache;
+    private Map<String,String > snoopCustomerToAgentChannel;
 
     @Autowired
     private SocketConfig socketConfig;
@@ -58,7 +58,7 @@ public class CallServiceImpl implements CallService {
         this.channelService = channelService;
         this.esIngestionService = esIngestionService;
         this.snoopToMediaChannelCache = new HashMap<>();
-        this.customerToAgentChannelCache = new HashMap<>();
+        this.snoopCustomerToAgentChannel = new HashMap<>();
     }
 
     @Override
@@ -194,52 +194,12 @@ public class CallServiceImpl implements CallService {
     @SneakyThrows
     public void onChannelLeftBridge(ChannelLeftBridge message) {
         String externalMediaChannel = snoopToMediaChannelCache.get(message.getChannel().getId());
+        String agentChannel = snoopCustomerToAgentChannel.get(message.getChannel().getId());
         if( externalMediaChannel!=null && !externalMediaChannel.isEmpty() )
             asteriskCommandService.hangupChannel(HangupChannelRequest.builder().channelId(externalMediaChannel).build());
-        else{
-            String agentChannel = customerToAgentChannelCache.get(message.getChannel().getId());
+        if( agentChannel!=null && !agentChannel.isEmpty() ) {
             asteriskCommandService.hangupChannel(HangupChannelRequest.builder().channelId(agentChannel).build());
         }
-//       List<String> channelList = message.getBridge().getChannels();
-//       for(String ch: channelList){
-//           ari.channels().get(ch).execute(new AriCallback<Channel>() {
-//               @Override
-//               @SneakyThrows
-//               public void onSuccess(Channel channel) {
-//                   ari.channels().hangup(channel.getId()).execute(new AriCallback<Void>() {
-//                       @Override
-//                       public void onSuccess(Void unused) {
-//                           log.info("HANGING UP CHANNELS::{}", channel);
-//                       }
-//
-//                       @Override
-//                       public void onFailure(RestException e) {
-//                            log.info("CHANNEL NOT FOUND");
-//                       }
-//                   });
-//               }
-//
-//               @Override
-//               public void onFailure(RestException e) {
-//
-//               }
-//           });
-
-//       }
-//        ari.bridges().destroy(message.getBridge().getId()).execute(new AriCallback<Void>() {
-//            @Override
-//            public void onSuccess(Void unused) {
-//                log.info("BRIDGE DESTROYED");
-//
-//            }
-//
-//            @Override
-//            public void onFailure(RestException e) {
-//                log.info("BRIDGE NOT FOUND");
-//            }
-//        });
-//          asteriskCommandService.channelHangup(message.getBridge());
-//          ari.bridges().destroy(message.getBridge().getId()).execute();
     }
 
     @Override
@@ -265,7 +225,7 @@ public class CallServiceImpl implements CallService {
 
         flaskService.intializeAudioSocket(newCallReq);
 
-        TimeUnit.MILLISECONDS.sleep(100);
+        TimeUnit.MILLISECONDS.sleep(200);
 
         log.info("Initiated audio-socket");
         FlaskResponse flaskResponse = flaskService.getDetails(callRequest, "customer");
@@ -331,7 +291,7 @@ public class CallServiceImpl implements CallService {
 
         flaskService.intializeAudioSocket(agentCallReq);
 
-        TimeUnit.MILLISECONDS.sleep(100);
+        TimeUnit.MILLISECONDS.sleep(200);
 
         log.info("Initiated audio-socket");
         FlaskResponse flaskResponseAgent = flaskService.getDetails(callRequest,"agent");
@@ -385,7 +345,7 @@ public class CallServiceImpl implements CallService {
         asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridgeAgent.getId()).channelId(snoopChannelAgent.getId()).build());
         asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridgeAgent.getId()).channelId(externalMediaChannelAgent.getId()).build());
         asteriskCommandService.dialChannel(agentChannel.getId());
-        this.customerToAgentChannelCache.put(customerChannel.getId(),agentChannel.getId());
+        this.snoopCustomerToAgentChannel.put(snoopChannel.getId(),agentChannel.getId());
         this.snoopToMediaChannelCache.put(snoopChannelAgent.getId(), externalMediaChannelAgent.getId());
     }
 
