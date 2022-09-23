@@ -27,8 +27,6 @@ public class CallServiceImpl implements CallService {
     private SerDeService serDeService;
     private AsteriskCommandService asteriskCommandService;
     private ChannelService channelService;
-    private ESIngestionService esIngestionService;
-
     private Map<String,String > snoopToMediaChannelCache;
 
     private Map<String,String > snoopCustomerToAgentChannel;
@@ -49,14 +47,12 @@ public class CallServiceImpl implements CallService {
     public CallServiceImpl(SerDeService serDeService,
                            AsteriskCommandService asteriskCommandService,
                            ARI ari,
-                           ChannelService channelService,
-                           ESIngestionService esIngestionService
+                           ChannelService channelService
     ) {
         this.serDeService = serDeService;
         this.asteriskCommandService = asteriskCommandService;
         this.ari = ari;
         this.channelService = channelService;
-        this.esIngestionService = esIngestionService;
         this.snoopToMediaChannelCache = new HashMap<>();
         this.snoopCustomerToAgentChannel = new HashMap<>();
     }
@@ -352,7 +348,7 @@ public class CallServiceImpl implements CallService {
 
 
     private Integer getUserId(String userName) {
-        String query = "Select usr.id from istar_user usr where email like '" + userName + "%'";
+        String query = "Select usr.id from istar_user usr where email like '" + userName + "@sbilife.co.in'";
         try {
             List<Map<String, Object>> data = jdbcTemplate.queryForList(query);
             if (data.isEmpty()) {
