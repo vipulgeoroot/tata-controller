@@ -19,4 +19,5 @@ public class CallRequest {
     private String appName;
     private String agentId;
     private String uniqueId;
+    private String stationName;
 }

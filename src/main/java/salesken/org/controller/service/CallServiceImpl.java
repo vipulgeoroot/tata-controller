@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import salesken.org.controller.configuration.ControllerConfiguration;
 import salesken.org.controller.configuration.SocketConfig;
 import salesken.org.controller.models.*;
 
@@ -23,13 +24,13 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class CallServiceImpl implements CallService {
 
-    private ARI ari;
-    private SerDeService serDeService;
-    private AsteriskCommandService asteriskCommandService;
-    private ChannelService channelService;
-    private Map<String,String > snoopToMediaChannelCache;
+    private final ARI ari;
+    private final SerDeService serDeService;
+    private final AsteriskCommandService asteriskCommandService;
+    private final ChannelService channelService;
+    private final Map<String,String > snoopToMediaChannelCache;
 
-    private Map<String,String > snoopCustomerToAgentChannel;
+    private final Map<String,String > snoopCustomerToAgentChannel;
 
     @Autowired
     private SocketConfig socketConfig;
@@ -42,6 +43,9 @@ public class CallServiceImpl implements CallService {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private ControllerConfiguration controllerConfiguration;
 
     @Autowired
     public CallServiceImpl(SerDeService serDeService,
@@ -203,6 +207,7 @@ public class CallServiceImpl implements CallService {
     public void onChannelUserevent(ChannelUserevent message) {
         CallRequest callRequest = serDeService.strToCallRequest(message.getUserevent().toString());
         Integer userId = getUserId(callRequest.getAgentId());
+        String suffixExtension = getSuffixExtension(callRequest.getStationName());
         if( userId == null)
         {
             log.error("Not able to map user");
@@ -215,7 +220,7 @@ public class CallServiceImpl implements CallService {
                 .audiosocket_ip(socketConfig.audiosocketHost)
                 .qing_base_url(socketConfig.cueingBaseUrl)
                 .user_id(userId)
-                .callSid("SAMPARK-"+callRequest.getUniqueId())
+                .callSid(controllerConfiguration.cdrPrefix+"-"+callRequest.getUniqueId())
                 .speaker("customer")
                 .build();
 
@@ -230,7 +235,7 @@ public class CallServiceImpl implements CallService {
         String audioSocketUrl = flaskResponse.getAudiosocket_ip() + ":" + flaskResponse.getAudiosocket_port();
 
         AsteriskResponse customerChannel = asteriskCommandService.createChannel(CreateChannelRequest.builder()
-                .extension("pjsip/0" + callRequest.getUniqueId() + "@samparkPro")
+                .extension(controllerConfiguration.customerPrefix + callRequest.getUniqueId() + suffixExtension)
                 .app(ari.getAppName()).build());
 
         if( customerChannel.getId() ==  null) {
@@ -281,7 +286,7 @@ public class CallServiceImpl implements CallService {
                 .audiosocket_ip(socketConfig.audiosocketHost)
                 .qing_base_url(socketConfig.cueingBaseUrl)
                 .user_id(userId)
-                .callSid("SAMPARK-"+callRequest.getUniqueId())
+                .callSid(controllerConfiguration.cdrPrefix+"-"+callRequest.getUniqueId())
                 .speaker("agent")
                 .build();
 
@@ -296,7 +301,7 @@ public class CallServiceImpl implements CallService {
         String audioSocketUrlAgent = flaskResponse.getAudiosocket_ip() + ":" + flaskResponseAgent.getAudiosocket_port();
 
         AsteriskResponse agentChannel = asteriskCommandService.createChannel(CreateChannelRequest.builder()
-                .extension("pjsip/1" + callRequest.getUniqueId() + "@samparkPro")
+                .extension(controllerConfiguration.agentPrefix + callRequest.getUniqueId() + suffixExtension)
                 .app(ari.getAppName()).build());
 
         if( agentChannel.getId() ==  null) {
@@ -345,6 +350,11 @@ public class CallServiceImpl implements CallService {
         this.snoopToMediaChannelCache.put(snoopChannelAgent.getId(), externalMediaChannelAgent.getId());
     }
 
+    private String getSuffixExtension(String stationName) {
+       if(stationName.equalsIgnoreCase("virar"))
+            return "@samparkProVirar";
+        return "@samparkPro";
+    }
 
 
     private Integer getUserId(String userName) {
