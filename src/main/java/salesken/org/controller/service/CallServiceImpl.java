@@ -206,20 +206,22 @@ public class CallServiceImpl implements CallService {
     @SneakyThrows
     public void tataTranscriptInitiation(String agentID, String agentChanelId,
                                          String customerChannelId, String callsId) {
-/*        Integer userId = getUserId(agentID);
+
+        Integer userId = getUserId(agentID);
+
         if( userId == null)
         {
             log.error("Not able to map user");
             return;
         }
-        log.info("User mapped - " + userId);*/
+        log.info("User mapped - " + userId);
 
         NewCallReq newCallReq = NewCallReq.builder()
                 .agent(agentID)
                 .audiosocket_ip(socketConfig.audiosocketHost)
                 .qing_base_url(socketConfig.cueingBaseUrl)
-                .user_id(1234)
-                .callSid(controllerConfiguration.cdrPrefix+"-"+callsId)
+                .user_id(userId)
+                .callSid(callsId)
                 .speaker("customer")
                 .build();
         flaskService.intializeAudioSocket(newCallReq);
@@ -284,8 +286,8 @@ public class CallServiceImpl implements CallService {
                 .agent(agentID)
                 .audiosocket_ip(socketConfig.audiosocketHost)
                 .qing_base_url(socketConfig.cueingBaseUrl)
-                .user_id(1234)
-                .callSid(controllerConfiguration.cdrPrefix+"-"+callsId)
+                .user_id(userId)
+                .callSid(callsId)
                 .speaker("agent")
                 .build();
 
@@ -352,7 +354,7 @@ public class CallServiceImpl implements CallService {
     @Override
     @SneakyThrows
     public void onChannelUserevent(ChannelUserevent message) {
-        CallRequest callRequest = serDeService.strToCallRequest(message.getUserevent().toString());
+        /*CallRequest callRequest = serDeService.strToCallRequest(message.getUserevent().toString());
         Integer userId = getUserId(callRequest.getAgentId());
         String suffixExtension = getSuffixExtension(callRequest.getStationName());
         if( userId == null)
@@ -494,7 +496,7 @@ public class CallServiceImpl implements CallService {
         asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridgeAgent.getId()).channelId(externalMediaChannelAgent.getId()).build());
         asteriskCommandService.dialChannel(agentChannel.getId());
         this.snoopCustomerToAgentChannel.put(snoopChannel.getId(),agentChannel.getId());
-        this.snoopToMediaChannelCache.put(snoopChannelAgent.getId(), externalMediaChannelAgent.getId());
+        this.snoopToMediaChannelCache.put(snoopChannelAgent.getId(), externalMediaChannelAgent.getId());*/
     }
 
     private String getSuffixExtension(String stationName) {
@@ -504,12 +506,13 @@ public class CallServiceImpl implements CallService {
     }
 
 
-    private Integer getUserId(String userName) {
-        String query = "Select usr.id from istar_user usr where email like '" + userName + "@sbilife.co.in'";
+    private Integer getUserId(String agentId) {
+        int userId = Integer.parseInt(agentId);
+        String query = "Select usr.id from istar_user usr where usr.id =" + userId;
         try {
             List<Map<String, Object>> data = jdbcTemplate.queryForList(query);
             if (data.isEmpty()) {
-                throw new Exception("No user mapped to user - "+userName);
+                throw new Exception("No user mapped to user - "+ agentId);
             } else {
                 return (Integer) data.get(0).get("id");
             }
