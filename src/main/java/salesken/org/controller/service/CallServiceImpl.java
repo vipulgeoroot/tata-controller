@@ -204,6 +204,142 @@ public class CallServiceImpl implements CallService {
 
     @Override
     @SneakyThrows
+    public void tataTranscriptInitiation(String agentID, String agentChanelId,
+                                         String customerChannelId, String callsId) {
+/*        Integer userId = getUserId(agentID);
+        if( userId == null)
+        {
+            log.error("Not able to map user");
+            return;
+        }
+        log.info("User mapped - " + userId);*/
+
+        NewCallReq newCallReq = NewCallReq.builder()
+                .agent(agentID)
+                .audiosocket_ip(socketConfig.audiosocketHost)
+                .qing_base_url(socketConfig.cueingBaseUrl)
+                .user_id(1234)
+                .callSid(controllerConfiguration.cdrPrefix+"-"+callsId)
+                .speaker("customer")
+                .build();
+        flaskService.intializeAudioSocket(newCallReq);
+
+        TimeUnit.MILLISECONDS.sleep(200);
+
+        log.info("Initiated audio-socket");
+        FlaskResponse flaskResponse = flaskService.getDetailsFromFlask(agentID, "customer");
+        log.info("Got details regarding audio-socket " + flaskResponse.toString());
+
+        String audioSocketUrl = flaskResponse.getAudiosocket_ip() + ":" + flaskResponse.getAudiosocket_port();
+
+        //String audioSocketUrl = "192.168.2.3" + ":" + 5000;
+
+        if(customerChannelId ==  null) {
+            log.error("Not able to create customer channel");
+            return;
+        }
+
+        AsteriskResponse snoopChannel = asteriskCommandService.createSnoopChannel(CreateSnoopChannelRequest.builder()
+                .channelId(customerChannelId)
+                .appName(ari.getAppName())
+                .spy("in")
+                .build());
+
+        if( snoopChannel == null || snoopChannel.getId() ==  null){
+            log.error("Not able to create snoop channel");
+            return;
+        }
+
+        AsteriskResponse externalMediaChannel = asteriskCommandService.createExternalChannel(CreateExternalChannelRequest.builder()
+                .appName(ari.getAppName())
+                .externalHostWithPort(audioSocketUrl)
+                .format("ulaw")
+                .encapsulation("audiosocket")
+                .transport("tcp")
+                .data(UUID.randomUUID().toString())
+                .build());
+
+        if( externalMediaChannel == null || externalMediaChannel.getId() ==  null) {
+            log.error("Not able to create external channel");
+            return;
+        }
+        AsteriskResponse bridge = asteriskCommandService.createBridge();
+
+        if( bridge == null || bridge.getId() ==  null) {
+            log.error("Not able to create bridge");
+            return;
+        }
+        asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridge.getId()).channelId(snoopChannel.getId()).build());
+        asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridge.getId()).channelId(externalMediaChannel.getId()).build());
+
+        this.snoopToMediaChannelCache.put(snoopChannel.getId(), externalMediaChannel.getId());
+
+        NewCallReq agentCallReq = NewCallReq.builder()
+                .agent(agentID)
+                .audiosocket_ip(socketConfig.audiosocketHost)
+                .qing_base_url(socketConfig.cueingBaseUrl)
+                .user_id(1234)
+                .callSid(controllerConfiguration.cdrPrefix+"-"+callsId)
+                .speaker("agent")
+                .build();
+
+        flaskService.intializeAudioSocket(agentCallReq);
+
+        TimeUnit.MILLISECONDS.sleep(200);
+
+        log.info("Initiated audio-socket");
+        FlaskResponse flaskResponseAgent = flaskService.getDetailsFromFlask(agentID, "agent");
+        log.info("Got details regarding audio-socket " + flaskResponseAgent.toString());
+
+        String audioSocketUrlAgent = "192.168.2.3" + ":" + flaskResponseAgent.getAudiosocket_port();
+
+        if( agentChanelId ==  null) {
+            log.error("Not able to create agent channel");
+            return;
+        }
+
+        AsteriskResponse snoopChannelAgent = asteriskCommandService.createSnoopChannel(CreateSnoopChannelRequest.builder()
+                .channelId(agentChanelId)
+                .appName(ari.getAppName())
+                .spy("in")
+                .build());
+
+        if( snoopChannelAgent == null || snoopChannelAgent.getId() ==  null){
+            log.error("Not able to create snoop channel");
+            return;
+
+        }
+
+        AsteriskResponse externalMediaChannelAgent = asteriskCommandService.createExternalChannel(CreateExternalChannelRequest.builder()
+                .appName(ari.getAppName())
+                .externalHostWithPort(audioSocketUrlAgent)
+                .format("ulaw")
+                .encapsulation("audiosocket")
+                .transport("tcp")
+                .data(UUID.randomUUID().toString())
+                .build());
+
+        if( externalMediaChannelAgent == null || externalMediaChannelAgent.getId() ==  null) {
+            log.error("Not able to create external channel");
+            return;
+        }
+
+        AsteriskResponse bridgeAgent = asteriskCommandService.createBridge();
+
+        if( bridgeAgent == null || bridgeAgent.getId() ==  null) {
+            log.error("Not able to create bridge");
+            return;
+        }
+
+        asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridgeAgent.getId()).channelId(snoopChannelAgent.getId()).build());
+        asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridgeAgent.getId()).channelId(externalMediaChannelAgent.getId()).build());
+
+        this.snoopCustomerToAgentChannel.put(snoopChannel.getId(),agentChanelId);
+        this.snoopToMediaChannelCache.put(snoopChannelAgent.getId(), externalMediaChannelAgent.getId());
+    }
+
+    @Override
+    @SneakyThrows
     public void onChannelUserevent(ChannelUserevent message) {
         CallRequest callRequest = serDeService.strToCallRequest(message.getUserevent().toString());
         Integer userId = getUserId(callRequest.getAgentId());
@@ -408,6 +544,7 @@ public class CallServiceImpl implements CallService {
 //             ari.channels().dial(message.getChannel().getId()).setCaller(message.getChannel().getId()).execute();
 //         }
     }
+
 
 
 }

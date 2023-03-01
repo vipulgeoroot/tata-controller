@@ -13,4 +13,6 @@ public interface CallService {
     void onChannelStateChange(ChannelStateChange message);
     void onChannelEnteredBridge(ChannelEnteredBridge messaage);
     void onChannelVarset(ChannelVarset message);
+
+    void tataTranscriptInitiation(String agentID, String agentChanelId, String customerChannelId, String callsId);
 }

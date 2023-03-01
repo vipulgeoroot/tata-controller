@@ -34,4 +34,12 @@ public class FlaskService {
         FlaskResponse flaskResponse = restTemplate.postForObject(url, request, FlaskResponse.class);
         return flaskResponse;
     }
+
+    public FlaskResponse getDetailsFromFlask(String agentId, String speaker) {
+        GetDetailsReq getDetailsReq = GetDetailsReq.builder().agent(agentId).speaker(speaker).build();
+        HttpEntity<GetDetailsReq> request = new HttpEntity<>(getDetailsReq);
+        String url = "http://" + flaskConfiguration.flaskHost + ":" + flaskConfiguration.flaskPort + "/get_details";
+        FlaskResponse flaskResponse = restTemplate.postForObject(url, request, FlaskResponse.class);
+        return flaskResponse;
+    }
 }
