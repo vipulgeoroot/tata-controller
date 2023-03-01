@@ -248,6 +248,8 @@ public class CallServiceImpl implements CallService {
         if( snoopChannel == null || snoopChannel.getId() ==  null){
             log.error("Not able to create snoop channel");
             return;
+        } else {
+            log.info("Snoop Channel created for CUSTOMER");
         }
 
         AsteriskResponse externalMediaChannel = asteriskCommandService.createExternalChannel(CreateExternalChannelRequest.builder()
@@ -262,12 +264,16 @@ public class CallServiceImpl implements CallService {
         if( externalMediaChannel == null || externalMediaChannel.getId() ==  null) {
             log.error("Not able to create external channel");
             return;
+        } else {
+            log.info("External media Channel created for CUSTOMER");
         }
         AsteriskResponse bridge = asteriskCommandService.createBridge();
 
         if( bridge == null || bridge.getId() ==  null) {
             log.error("Not able to create bridge");
             return;
+        } else {
+            log.info("Created Bridge for CUSTOMER");
         }
         asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridge.getId()).channelId(snoopChannel.getId()).build());
         asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridge.getId()).channelId(externalMediaChannel.getId()).build());
@@ -291,7 +297,7 @@ public class CallServiceImpl implements CallService {
         FlaskResponse flaskResponseAgent = flaskService.getDetailsFromFlask(agentID, "agent");
         log.info("Got details regarding audio-socket " + flaskResponseAgent.toString());
 
-        String audioSocketUrlAgent = "192.168.2.3" + ":" + flaskResponseAgent.getAudiosocket_port();
+        String audioSocketUrlAgent = flaskResponseAgent.getAudiosocket_ip() + ":" + flaskResponseAgent.getAudiosocket_port();
 
         if( agentChanelId ==  null) {
             log.error("Not able to create agent channel");
@@ -307,7 +313,8 @@ public class CallServiceImpl implements CallService {
         if( snoopChannelAgent == null || snoopChannelAgent.getId() ==  null){
             log.error("Not able to create snoop channel");
             return;
-
+        } else {
+            log.info("Snoop Channel created for AGENT");
         }
 
         AsteriskResponse externalMediaChannelAgent = asteriskCommandService.createExternalChannel(CreateExternalChannelRequest.builder()
@@ -322,6 +329,8 @@ public class CallServiceImpl implements CallService {
         if( externalMediaChannelAgent == null || externalMediaChannelAgent.getId() ==  null) {
             log.error("Not able to create external channel");
             return;
+        } else {
+            log.info("External media Channel created for AGENT");
         }
 
         AsteriskResponse bridgeAgent = asteriskCommandService.createBridge();
@@ -329,6 +338,8 @@ public class CallServiceImpl implements CallService {
         if( bridgeAgent == null || bridgeAgent.getId() ==  null) {
             log.error("Not able to create bridge");
             return;
+        } else {
+            log.info("Created Bridge for AGENT");
         }
 
         asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridgeAgent.getId()).channelId(snoopChannelAgent.getId()).build());
