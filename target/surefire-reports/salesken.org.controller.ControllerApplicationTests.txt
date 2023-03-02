@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: salesken.org.controller.ControllerApplicationTests
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.914 s - in salesken.org.controller.ControllerApplicationTests
