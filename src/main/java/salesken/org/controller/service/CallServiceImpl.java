@@ -234,8 +234,6 @@ public class CallServiceImpl implements CallService {
 
         String audioSocketUrl = flaskResponse.getAudiosocket_ip() + ":" + flaskResponse.getAudiosocket_port();
 
-        //String audioSocketUrl = "192.168.2.3" + ":" + 5000;
-
         if(customerChannelId ==  null) {
             log.error("Not able to create customer channel");
             return;
@@ -499,11 +497,11 @@ public class CallServiceImpl implements CallService {
         this.snoopToMediaChannelCache.put(snoopChannelAgent.getId(), externalMediaChannelAgent.getId());*/
     }
 
-    private String getSuffixExtension(String stationName) {
+/*    private String getSuffixExtension(String stationName) {
        if(stationName.equalsIgnoreCase("virar"))
             return "@samparkProVirar";
         return "@samparkPro";
-    }
+    }*/
 
 
     private Integer getUserId(String agentId) {
