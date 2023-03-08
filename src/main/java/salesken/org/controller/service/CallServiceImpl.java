@@ -207,6 +207,13 @@ public class CallServiceImpl implements CallService {
     public void tataTranscriptInitiation(String agentID, String agentChanelId,
                                          String customerChannelId, String callsId) {
 
+        if (agentID == null || agentChanelId == null || customerChannelId == null || callsId == null) {
+            log.error("Unable to proceed further as either agentID: {}, or agentChanelId: {}, " +
+                    "or customerChannelId: {}, or callsId: {} is NULL ", agentID, agentChanelId, customerChannelId,
+                    callsId);
+            return;
+        }
+
         Integer userId = getUserId(agentID);
 
         if( userId == null)
@@ -235,11 +242,12 @@ public class CallServiceImpl implements CallService {
         String audioSocketUrl = flaskResponse.getAudiosocket_ip() + ":" + flaskResponse.getAudiosocket_port();
 
         if(customerChannelId ==  null) {
-            log.error("Not able to create customer channel");
+            log.error("Not able to create customer channel as customerChannelId is NULL");
             return;
         }
 
-        AsteriskResponse snoopChannel = asteriskCommandService.createSnoopChannel(CreateSnoopChannelRequest.builder()
+        AsteriskResponse snoopChannel =
+                asteriskCommandService.createSnoopChannel(CreateSnoopChannelRequest.builder()
                 .channelId(customerChannelId)
                 .appName(ari.getAppName())
                 .spy("in")
@@ -252,7 +260,8 @@ public class CallServiceImpl implements CallService {
             log.info("Snoop Channel created for CUSTOMER");
         }
 
-        AsteriskResponse externalMediaChannel = asteriskCommandService.createExternalChannel(CreateExternalChannelRequest.builder()
+        AsteriskResponse externalMediaChannel =
+                asteriskCommandService.createExternalChannel(CreateExternalChannelRequest.builder()
                 .appName(ari.getAppName())
                 .externalHostWithPort(audioSocketUrl)
                 .format("ulaw")
@@ -275,8 +284,10 @@ public class CallServiceImpl implements CallService {
         } else {
             log.info("Created Bridge for CUSTOMER");
         }
-        asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridge.getId()).channelId(snoopChannel.getId()).build());
-        asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridge.getId()).channelId(externalMediaChannel.getId()).build());
+        asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridge.getId())
+                .channelId(snoopChannel.getId()).build());
+        asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridge.getId())
+                .channelId(externalMediaChannel.getId()).build());
 
         this.snoopToMediaChannelCache.put(snoopChannel.getId(), externalMediaChannel.getId());
 
@@ -297,14 +308,16 @@ public class CallServiceImpl implements CallService {
         FlaskResponse flaskResponseAgent = flaskService.getDetailsFromFlask(agentID, "agent");
         log.info("Got details regarding audio-socket " + flaskResponseAgent.toString());
 
-        String audioSocketUrlAgent = flaskResponseAgent.getAudiosocket_ip() + ":" + flaskResponseAgent.getAudiosocket_port();
+        String audioSocketUrlAgent =
+                flaskResponseAgent.getAudiosocket_ip() + ":" + flaskResponseAgent.getAudiosocket_port();
 
         if( agentChanelId ==  null) {
-            log.error("Not able to create agent channel");
+            log.error("Not able to create agent channel as agentChanelId is NULL");
             return;
         }
 
-        AsteriskResponse snoopChannelAgent = asteriskCommandService.createSnoopChannel(CreateSnoopChannelRequest.builder()
+        AsteriskResponse snoopChannelAgent =
+                asteriskCommandService.createSnoopChannel(CreateSnoopChannelRequest.builder()
                 .channelId(agentChanelId)
                 .appName(ari.getAppName())
                 .spy("in")
@@ -317,7 +330,8 @@ public class CallServiceImpl implements CallService {
             log.info("Snoop Channel created for AGENT");
         }
 
-        AsteriskResponse externalMediaChannelAgent = asteriskCommandService.createExternalChannel(CreateExternalChannelRequest.builder()
+        AsteriskResponse externalMediaChannelAgent =
+                asteriskCommandService.createExternalChannel(CreateExternalChannelRequest.builder()
                 .appName(ari.getAppName())
                 .externalHostWithPort(audioSocketUrlAgent)
                 .format("ulaw")
@@ -342,8 +356,10 @@ public class CallServiceImpl implements CallService {
             log.info("Created Bridge for AGENT");
         }
 
-        asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridgeAgent.getId()).channelId(snoopChannelAgent.getId()).build());
-        asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridgeAgent.getId()).channelId(externalMediaChannelAgent.getId()).build());
+        asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridgeAgent.getId())
+                .channelId(snoopChannelAgent.getId()).build());
+        asteriskCommandService.addChannelToBridge(AddChannelToBridgeRequest.builder().bridgeId(bridgeAgent.getId())
+                .channelId(externalMediaChannelAgent.getId()).build());
 
         this.snoopCustomerToAgentChannel.put(snoopChannel.getId(),agentChanelId);
         this.snoopToMediaChannelCache.put(snoopChannelAgent.getId(), externalMediaChannelAgent.getId());
@@ -505,9 +521,9 @@ public class CallServiceImpl implements CallService {
 
 
     private Integer getUserId(String agentId) {
-        int userId = Integer.parseInt(agentId);
-        String query = "Select usr.id from istar_user usr where usr.id =" + userId;
         try {
+            int userId = Integer.parseInt(agentId);
+            String query = "Select usr.id from istar_user usr where usr.id =" + userId;
             List<Map<String, Object>> data = jdbcTemplate.queryForList(query);
             if (data.isEmpty()) {
                 throw new Exception("No user mapped to user - "+ agentId);
